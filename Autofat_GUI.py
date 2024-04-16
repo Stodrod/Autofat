@@ -5,7 +5,8 @@ from data_processing import save_to_csv
 import datetime
 import serial.tools.list_ports
 import os
-
+import sys
+from pathlib import Path
 BAUD_RATE = 115200
 class AutoFatGUI(ctk.CTk):
     def __init__(self):
@@ -46,8 +47,6 @@ class AutoFatGUI(ctk.CTk):
         self.status_text.delete("1.0", ctk.END)
         self.status_text.insert(ctk.END, f"Starting Auto Fat Test for Board: {board_number}, P10201 Version: {p10201_version}\n\n")
 
-        
-
         # Create a SerialHandler instance
         serial_handler = SerialHandler(selected_port, BAUD_RATE)
 
@@ -57,8 +56,12 @@ class AutoFatGUI(ctk.CTk):
         # Get the current timestamp
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
+        # Create the "Tests" directory if it doesn't exist
+        tests_dir = Path.cwd() / "Tests"
+        tests_dir.mkdir(parents=True, exist_ok=True)
+
         # Create the CSV file name with Board Number, P10201 Version, and timestamp
-        csv_filename = f"AutoFatTest_{board_number}_{p10201_version}_{timestamp}.csv"
+        csv_filename = tests_dir / f"AutoFatTest_{board_number}_{p10201_version}_{timestamp}.csv"
 
         self.status_text.insert(ctk.END, "Running Auto Fat Test...\n")
         self.status_text.update()
@@ -71,16 +74,19 @@ class AutoFatGUI(ctk.CTk):
             self.status_text.update()
 
             # Save the test result to the CSV file
-            save_to_csv(result, csv_filename, board_number, p10201_version)
+            save_to_csv(result, str(csv_filename), board_number, p10201_version)
 
             # Print the CSV file location to the text box
-            self.status_text.insert(ctk.END, f"CSV file location: {os.path.abspath(csv_filename)}\n")
+            self.status_text.insert(ctk.END, f"CSV file location: {csv_filename.absolute()}\n")
             self.status_text.update()
 
         # Disconnect from the serial port
         serial_handler.disconnect()
 
         self.status_text.insert(ctk.END, "Auto Fat Test Completed.")
+
+        # Close the program
+        sys.exit()
 
 if __name__ == "__main__":
     gui = AutoFatGUI()
